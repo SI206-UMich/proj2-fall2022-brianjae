@@ -78,7 +78,14 @@ def get_listing_information(listing_id):
 
     policyNumParent = soup.find('ul', class_="fhhmddr dir dir-ltr")
     policyNumTag = policyNumParent.find('span', class_="ll4r2nl dir dir-ltr")
-    policyNum = policyNumTag.text
+
+    if re.search("[p|P]ending", policyNumTag.text):
+        policyNum = "Pending"
+    elif re.search("\d{5,}", policyNumTag.text):
+        policyNum = policyNumTag.text
+    else:
+        policyNum = "Exempt"
+
     placeTypeTag = soup.find('h2', class_="_14i3z6h")
     placeTypeText = placeTypeTag.text
 
@@ -94,9 +101,8 @@ def get_listing_information(listing_id):
         numBedrooms = int(re.findall("^(\d+).*bedrooms?", bedroomText[0])[0])
     if len(bedroomText) == 0:
         numBedrooms = 1
-
     file_obj.close()
-    
+
     return ((policyNum, placeType, numBedrooms))
 
 def get_detailed_listing_database(html_file):
@@ -174,17 +180,18 @@ def check_policy_numbers(data):
 
     """
     pattern = "20\d{2}\-00\d{4}STR|STR\-000\d{4}"
-    valid_list = []
+    noExemptAndPending = []
     invalid_list = []
 
     for listing in data:
-        match = re.findall(pattern, listing[3])
-        valid_list.append(match)
-    
-    for listing in data:
-        if listing[3] not in valid_list:
+        policyNum = listing[3]
+        if ((policyNum != "Pending") and (policyNum != "Exempt")):
+            noExemptAndPending.append(listing)
+            
+    for listing in noExemptAndPending:
+        if not re.search(pattern, listing[3]):
             invalid_list.append(listing[2])
-
+            
     return invalid_list
 
 def extra_credit(listing_id):
@@ -201,7 +208,23 @@ def extra_credit(listing_id):
     gone over their 90 day limit, else return True, indicating the lister has
     never gone over their limit.
     """
-    pass
+    html_file = "html_files/listing_" + listing_id + "_reviews.html"
+    file_obj = open(html_file)
+    soup = BeautifulSoup(file_obj, 'html.parser')
+
+    reviewsPerYearCt = {}
+    reviewDateTags = soup.find_all('li', class_="_1f1oir5")
+
+    for reviewDateTag in reviewDateTags:
+        reviewDate = reviewDateTag.text
+        year = re.findall(r"\b(\d{4})\b", reviewDate)[0]
+        reviewsPerYearCt[year] = reviewsPerYearCt.get(year, 0) + 1
+    file_obj.close()
+
+    for year in reviewsPerYearCt.keys():
+        if reviewsPerYearCt[year] > 90:
+            return False
+    return True
 
 class TestCases(unittest.TestCase):
 
@@ -281,11 +304,11 @@ class TestCases(unittest.TestCase):
         # check that there are 21 lines in the csv
         self.assertEqual(len(csv_lines), 21)
         # check that the header row is correct
-        self.assertEqual(csv_lines[0], "Listing Title,Cost,Listing ID,Policy Number,Place Type,Number of Bedrooms")
+        self.assertEqual(csv_lines[0], ['Listing Title', 'Cost', 'Listing ID', 'Policy Number', 'Place Type', 'Number of Bedrooms'])
         # check that the next row is Private room in Mission District,82,51027324,Pending,Private Room,1
-        self.assertEqual(csv_lines[1], "Private room in Mission District,82,51027324,Pending,Private Room,1")
+        self.assertEqual(csv_lines[1], ['Private room in Mission District', '82', '51027324', 'Pending', 'Private Room', '1'])
         # check that the last row is Apartment in Mission District,399,28668414,Pending,Entire Room,2
-        self.assertEqual(csv_lines[-1], "Apartment in Mission District,399,28668414,Pending,Entire Room,2")
+        self.assertEqual(csv_lines[-1], ['Apartment in Mission District', '399', '28668414', 'Pending', 'Entire Room', '2'])
 
     def test_check_policy_numbers(self):
         # call get_detailed_listing_database on "html_files/mission_district_search_results.html"
@@ -295,11 +318,10 @@ class TestCases(unittest.TestCase):
         invalid_listings = check_policy_numbers(detailed_database)
         # check that the return value is a list
         self.assertEqual(type(invalid_listings), list)
-        # check that there is exactly one element in the string
-        for listing in invalid_listings:
-            self.assertEqual(len(listing), 1)
-            # check that the element in the list is a string
-            self.assertEqual(type(listing), str)
+        # check that there is exactly one element in the list
+        self.assertEqual(len(invalid_listings), 1)
+        # check that the element in the list is a string
+        self.assertEqual(type(invalid_listings[0]), str)
         # check that the first element in the list is '16204265'
         self.assertEqual(invalid_listings[0], '16204265')
 
