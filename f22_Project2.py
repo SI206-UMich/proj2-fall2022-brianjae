@@ -1,3 +1,8 @@
+# Your name: Brian Cho
+# Your student id: 45736650
+# Your email: brianjae@umich.edu
+# List who you have worked with on this project: Matthew Yeh
+
 from xml.sax import parseString
 from bs4 import BeautifulSoup
 import re
@@ -25,8 +30,24 @@ def get_listings_from_search_results(html_file):
         ('Loft in Mission District', 210, '1944564'),  # example
     ]
     """
-    pass
+    file_obj = open(html_file)
+    soup = BeautifulSoup(file_obj, 'html.parser')
+    file_obj.close()
 
+    listingInfo = []
+    listings = soup.find_all('div', class_="lwy0wad l1tup9az dir dir-ltr")
+
+    for listing in listings:
+        titleTag = listing.find('div', class_="t1jojoys dir dir-ltr")
+        title = titleTag.text
+        costTag = listing.find('span', class_="_tyxjp1")
+        cost = re.findall("^\$(\d+)", costTag.text)[0]
+        cost = int(cost)
+        listing = listing.find('div', class_="t1jojoys dir dir-ltr").get('id', None)
+        listingID = re.findall("title_(\d{7,8})", listing)[0]
+        listingInfo.append((title, cost, listingID))
+    
+    return listingInfo
 
 def get_listing_information(listing_id):
     """
@@ -52,13 +73,33 @@ def get_listing_information(listing_id):
         number of bedrooms
     )
     """
-    pass
+    html_file = "html_files/listing_" + listing_id + ".html"
+    file_obj = open(html_file)
+    soup = BeautifulSoup(file_obj, 'html.parser')
 
+    policyNumParent = soup.find('ul', class_="fhhmddr dir dir-ltr")
+    policyNumTag = policyNumParent.find('span', class_="ll4r2nl dir dir-ltr")
+    policyNum = policyNumTag.text
+    placeTypeTag = soup.find('h2', class_="_14i3z6h")
+    placeTypeText = placeTypeTag.text
+    
+    if re.search("Private", placeTypeText):
+        placeType = "Private Room"
+    elif re.search("Shared", placeTypeText):
+        placeType = "Shared Room"    
+    else: 
+        placeType = "Entire Room"
+    
+    bedroomText = soup.body.findAll(text=re.compile('^(\d+) bedrooms?$'))
+    numBedrooms = int(re.findall("^(\d+) bedrooms?", bedroomText[0])[0])
+    file_obj.close()
+    
+    return ((policyNum, placeType, numBedrooms))
 
 def get_detailed_listing_database(html_file):
     """
     Write a function that calls the above two functions in order to return
-    the complete listing information using the functions you’ve created.
+    the complete listing information using the functions you've created.
     This function takes in a variable representing the location of the search results html file.
     The return value should be in this format:
 
@@ -69,8 +110,17 @@ def get_detailed_listing_database(html_file):
         ...
     ]
     """
-    pass
+    detailed_list = []
+    search_list = get_listings_from_search_results(html_file)
 
+    for tup in search_list:
+        listing_id = tup[2]
+        listing_info = get_listing_information(listing_id)
+        combined_tup = tup + listing_info
+        detailed_list.append(combined_tup)
+    
+    print(detailed_list)
+    return detailed_list
 
 def write_csv(data, filename):
     """
@@ -94,8 +144,13 @@ def write_csv(data, filename):
 
     This function should not return anything.
     """
-    pass
+    sorted_list = sorted(data, key=lambda t: t[1])
 
+    with open(filename, 'w') as f:
+        csv_writer = csv.writer(f)
+        csv_writer.writerow(['Listing Title', 'Cost', 'Listing ID', 'Policy Number', 'Place Type', 'Number of Bedrooms'])
+        for row in sorted_list:
+            csv_writer.writerow(row)
 
 def check_policy_numbers(data):
     """
@@ -116,8 +171,19 @@ def check_policy_numbers(data):
     ]
 
     """
-    pass
+    """
+    pattern = "20\d{2}\-00\d{4}STR|STR\-000\d{4}"
+    invalid_list = []
 
+    for tup[3] in data:
+        if tup[3] != "Pending" and tup[3] != "Exempt":
+            match_list = re.findall(tup[3],pattern)
+        if tup[3] not in match_list:
+            invalid_list.append(tup[3])
+    
+    return invalid_list
+    """
+    pass
 
 def extra_credit(listing_id):
     """
