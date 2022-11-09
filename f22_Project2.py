@@ -174,15 +174,20 @@ def check_policy_numbers(data):
     ]
 
     """
-    """
+    
     pattern = "20\d{2}\-00\d{4}STR|STR\-000\d{4}"
+    valid_list = []
     invalid_list = []
 
-
+    for listing in data:
+        match = re.findall(pattern, listing[3])
+        valid_list.append(match)
     
+    for listing in data:
+        if listing[3] not in valid_list:
+            invalid_list.append(listing[2])
+            
     return invalid_list
-    """
-    pass
 
 def extra_credit(listing_id):
     """
