@@ -10,7 +10,6 @@ import os
 import csv
 import unittest
 
-
 def get_listings_from_search_results(html_file):
     """
     Write a function that creates a BeautifulSoup object on html_file. Parse
@@ -174,7 +173,6 @@ def check_policy_numbers(data):
     ]
 
     """
-    
     pattern = "20\d{2}\-00\d{4}STR|STR\-000\d{4}"
     valid_list = []
     invalid_list = []
@@ -186,7 +184,7 @@ def check_policy_numbers(data):
     for listing in data:
         if listing[3] not in valid_list:
             invalid_list.append(listing[2])
-            
+
     return invalid_list
 
 def extra_credit(listing_id):
@@ -205,7 +203,6 @@ def extra_credit(listing_id):
     """
     pass
 
-
 class TestCases(unittest.TestCase):
 
     def test_get_listings_from_search_results(self):
@@ -217,11 +214,12 @@ class TestCases(unittest.TestCase):
         # check that the variable you saved after calling the function is a list
         self.assertEqual(type(listings), list)
         # check that each item in the list is a tuple
-
+        for i in range(len(listings)):
+            self.assertEqual(type(listings[i]), tuple)
         # check that the first title, cost, and listing id tuple is correct (open the search results html and find it)
-
+        self.assertEqual(listings[0], ('Loft in Mission District', 210, '1944564'))
         # check that the last title is correct (open the search results html and find it)
-        pass
+        self.assertEqual(listings[-1][0], "Guest suite in Mission District")
 
     def test_get_listing_information(self):
         html_list = ["1623609",
@@ -249,8 +247,7 @@ class TestCases(unittest.TestCase):
         self.assertEqual(listing_informations[-1][1], "Private Room")
         # check that the third listing has one bedroom
         self.assertEqual(listing_informations[2][2], 1)
-        pass
-
+        
     def test_get_detailed_listing_database(self):
         # call get_detailed_listing_database on "html_files/mission_district_search_results.html"
         # and save it to a variable
@@ -268,7 +265,6 @@ class TestCases(unittest.TestCase):
         # check that the last tuple is made up of the following:
         # 'Guest suite in Mission District', 238, '32871760', 'STR-0004707', 'Entire Room', 1
         self.assertEqual(detailed_database[-1],('Guest suite in Mission District', 238, '32871760', 'STR-0004707', 'Entire Room', 1))
-        pass
 
     def test_write_csv(self):
         # call get_detailed_listing_database on "html_files/mission_district_search_results.html"
@@ -285,12 +281,11 @@ class TestCases(unittest.TestCase):
         # check that there are 21 lines in the csv
         self.assertEqual(len(csv_lines), 21)
         # check that the header row is correct
-
+        self.assertEqual(csv_lines[0], "Listing Title,Cost,Listing ID,Policy Number,Place Type,Number of Bedrooms")
         # check that the next row is Private room in Mission District,82,51027324,Pending,Private Room,1
-
+        self.assertEqual(csv_lines[1], "Private room in Mission District,82,51027324,Pending,Private Room,1")
         # check that the last row is Apartment in Mission District,399,28668414,Pending,Entire Room,2
-
-        pass
+        self.assertEqual(csv_lines[-1], "Apartment in Mission District,399,28668414,Pending,Entire Room,2")
 
     def test_check_policy_numbers(self):
         # call get_detailed_listing_database on "html_files/mission_district_search_results.html"
@@ -301,12 +296,12 @@ class TestCases(unittest.TestCase):
         # check that the return value is a list
         self.assertEqual(type(invalid_listings), list)
         # check that there is exactly one element in the string
-
-        # check that the element in the list is a string
-
+        for listing in invalid_listings:
+            self.assertEqual(len(listing), 1)
+            # check that the element in the list is a string
+            self.assertEqual(type(listing), str)
         # check that the first element in the list is '16204265'
-        pass
-
+        self.assertEqual(invalid_listings[0], '16204265')
 
 if __name__ == '__main__':
     database = get_detailed_listing_database("html_files/mission_district_search_results.html")
